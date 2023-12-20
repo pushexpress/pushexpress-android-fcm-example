@@ -47,7 +47,6 @@ class MainActivity : ComponentActivity() {
         sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
         icToken = sharedPreferences.getString(IC_TOKEN, "").toString()
 
-        // Check if uuid already exists in local storage.
         if (icToken.isEmpty()) {
             icToken = UUID.randomUUID().toString()
             with (sharedPreferences.edit()) {
@@ -56,7 +55,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         Log.d(LOG_APP_INFO, "CURRENT UUID: $icToken")
-        // Get firebase token.
+
         Firebase.messaging.token.addOnCompleteListener {
             if (it.isSuccessful) {
                 with (sharedPreferences.edit()){
@@ -75,7 +74,7 @@ class MainActivity : ComponentActivity() {
             .getString(IC_TOKEN, null)}")
     }
     private fun getAppID() {
-        var sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
         val json = JSONObject()
         json.put("ic_token", icToken)
 
@@ -109,34 +108,35 @@ class MainActivity : ComponentActivity() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
+                Log.e(LOG_APP_INFO, e.printStackTrace().toString())
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val responseBody = response.body?.string()
-                val id = JSONObject(responseBody).getString("id")
-                with (sharedPreferences.edit()){
-                    putString(PUSHEXPRESS_ID, id)
-                    apply()
+                if (response.isSuccessful){
+                    val id = responseBody?.let { JSONObject(it).getString("id") }
+                    with (sharedPreferences.edit()){
+                        putString(PUSHEXPRESS_ID, id)
+                        apply()
+                    }
+                } else {
+                    Log.e(LOG_APP_INFO, "failed to get response from ${request.url}")
                 }
             }
         })
     }
 
     private fun getDeviceCountry(context: Context): String {
-        try {
-            val telephonyManager = context
-                .getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-            return telephonyManager.networkCountryIso
+        return try {
+            (context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager)?.networkCountryIso.orEmpty()
         } catch (e: Exception) {
             Log.e(LOG_APP_INFO, e.toString())
-        } finally {
-            return ""
+            ""
         }
     }
 
     private fun updateAppInfo() {
-        var sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
 
         val firebaseToken = sharedPreferences.getString(FIREBASE_TOKEN, null)
         val icID = sharedPreferences.getString(PUSHEXPRESS_ID, null)
@@ -167,7 +167,11 @@ class MainActivity : ComponentActivity() {
 
             override fun onResponse(call: Call, response: Response) {
                 val responseBody = response.body?.string()
-                Log.d(LOG_APP_INFO, "update info response: $responseBody")
+                if (response.isSuccessful){
+                    Log.d(LOG_APP_INFO, "update info response: $responseBody")
+                } else {
+                    Log.e(LOG_APP_INFO, "failed to get response from ${request.url}")
+                }
             }
         })
     }
