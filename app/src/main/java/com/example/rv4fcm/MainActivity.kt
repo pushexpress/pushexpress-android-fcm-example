@@ -18,10 +18,8 @@ import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Locale
-import java.util.Random
 import java.util.TimeZone
 import java.util.UUID
-import kotlin.math.pow
 
 
 const val PUSHEXPRESS_APP_ID: String = "9999-999999"
@@ -54,7 +52,6 @@ class MainActivity : ComponentActivity() {
                 apply()
             }
         }
-        Log.d(LOG_APP_INFO, "CURRENT UUID: $icToken")
 
         Firebase.messaging.token.addOnCompleteListener {
             if (it.isSuccessful) {
@@ -73,6 +70,7 @@ class MainActivity : ComponentActivity() {
         Log.d(LOG_APP_INFO, "ic token ${sharedPreferences
             .getString(IC_TOKEN, null)}")
     }
+
     private fun getAppID() {
         val sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
         val json = JSONObject()
@@ -81,29 +79,9 @@ class MainActivity : ComponentActivity() {
         val requestBody = json.toString()
             .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
 
-        val client = OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                var request = chain.request()
-                    .newBuilder()
-                    .post(requestBody)
-                    .build()
-                var response = chain.proceed(chain.request())
-                var tryCount = 0
-                while (!response.isSuccessful && tryCount < 10) {
-                    tryCount++
-                    val sleepTime = (2.0.pow(tryCount.toDouble()) + Random().nextInt(3000 - 1000) + 1000).toLong()
-                    Thread.sleep(sleepTime)
-                    response.close()
-
-                    response = chain.proceed(chain.request())
-                    request = request.newBuilder().build()
-                }
-                response
-            }
-            .build()
-
         val request = Request.Builder()
             .url("https://core.push.express/api/r/v2/apps/$PUSHEXPRESS_APP_ID/instances")
+            .post(requestBody)
             .build()
 
         client.newCall(request).enqueue(object : Callback {
