@@ -2,9 +2,8 @@
 > [!NOTE]
 > Everything in this readme has been done using Android Studio Hedgehog | 2023.1.1 Build #AI-231.9392.1.2311.11076708, built on November 9, 2023
 
-### Route 1 (manual)
+### Option 1: Add Firebase using the Firebase console (mostly manual).
 
-#### Firebase account setup
 > [!NOTE]
 > Assuming you already have a google account and firebase account.
 
@@ -23,14 +22,25 @@
 > Make sure to enter the package name that your app is actually using. The package name value is case-sensitive, and it cannot be changed for this Firebase Android app after it's registered with your Firebase project.
 
 <img src="/docs/images/android_app_id.png" width=50%>
+
 > [!TIP]
 > Find your app's package name in your module (app-level) Gradle file, usually app/build.gradle (example package name: com.yourcompany.yourproject)
 
+2. Click **Register app**.
+
+3. Add a Firebase configuration file.
+    - Download and then add the Firebase Android configuration file `(google-services.json)` to your app
+    - Move your config file into the **module (app-level)** root directory of your app
+
+> [!TIP]
+>  Your typical path should look like this `.../AndroidStudioProjects/your_app_name/app/google-services.json`
 
 
-#### Installing dependecies
+
+4. Install dependencies
+
 Filename: `build.gradle.kts` (Module :app). This is your module (app-level).
-```
+```kotlin
 plugins {
     // ...
     // Add the Google services Gradle plugin
@@ -49,10 +59,29 @@ dependencies {
 ```
 
 Filename: `build.gradle.kts` (Project \<your app name>\). This is your root-level (project-level).
-```
+```kotlin
 plugins {
     // ...
     // Add the dependency for the Google services Gradle plugin
     id("com.google.gms.google-services") version "4.4.0" apply false
 }
 ```
+
+### Option 2: Add Firebase using the Firebase Assistant (mostly automated).
+
+> [!TIP]
+> As per Firebase documentation: _The Firebase Assistant registers your app with a Firebase project and adds the necessary Firebase files, plugins, and dependencies to your Android project — all from within Android Studio!_
+
+1. Open your Android project in Android Studio, then make sure that you're using the latest versions of Android Studio and the Firebase Assistant:
+
+    Windows / Linux: \
+    **Help** > **Check for updates**
+
+    macOS: \
+    **Android Studio** > **Check for updates**
+
+2. Open the Firebase Assistant: **Tools** > **Firebase**. \
+
+    <img src="/docs/images/firebase_assistant.png" width=50%>
+
+3. In docked menu, choose _Cloud Messaging_
