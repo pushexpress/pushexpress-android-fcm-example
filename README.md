@@ -17,16 +17,15 @@
     - Enter your app's package name in the Android package name field (_This field is the only mandatory one, if are not sure how to fill other fields - just don't_.)
 
     
-    <img src="/docs/images/get_started.png" width=50% padding=1rem>
+    <img src="/docs/images/get_started.png" width=50% margin=1rem>
 
-    > [!WARNING]
-    > Make sure to enter the package name that your app is actually using. The package name value is case-sensitive, and it cannot be changed for this Firebase Android app after it's registered with your Firebase project.
+> [!WARNING]
+> Make sure to enter the package name that your app is actually using. The package name value is case-sensitive, and it cannot be changed for this Firebase Android app after it's registered with your Firebase project.
 
-    > [!TIP]
-    > Find your app's package name in your module (app-level) Gradle file, usually app/build.gradle (example package name: com.yourcompany.yourproject)
+<img src="/docs/images/android_app_id.png" width=50%>
+> [!TIP]
+> Find your app's package name in your module (app-level) Gradle file, usually app/build.gradle (example package name: com.yourcompany.yourproject)
 
-    
-    <img src="/docs/images/android_app_id.png" width=50%>
 
 
 #### Installing dependecies
