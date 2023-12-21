@@ -87,5 +87,5 @@
 4. Follow the instructions up until second article.
 
 If everything went as it should've, you cann peek into logcat and confirm that Firebase has been initialized.
-    <img src="/docs/images/android_app_id.png">
+    <img src="/docs/images/firebase_init.jpg">
     
