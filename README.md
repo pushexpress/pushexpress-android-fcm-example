@@ -1,7 +1,10 @@
-## Set up a Firebase Cloud Messaging client app on Android
 > [!NOTE]
 > Everything in this readme has been done using Android Studio Hedgehog | 2023.1.1 Build #AI-231.9392.1.2311.11076708, built on November 9, 2023
 
+- [Set up a Firebase Cloud Messaging client app on Android](#Set up a Firebase Cloud Messaging client app on Android)
+{:toc}
+
+## Set up a Firebase Cloud Messaging client app on Android
 ### Option 1: Add Firebase using the Firebase console (mostly manual).
 
 > [!NOTE]
@@ -13,19 +16,17 @@
 1. Go to the [Firebase console](https://console.firebase.google.com/).
 
     - In the center of the project overview page, click the Android icon or Add app to launch the setup workflow
-    - Enter your app's package name in the Android package name field (_This field is the only mandatory one, if are not sure how to fill other fields - just don't_.)
-
-    
     <img src="/docs/images/get_started.png" width=50%>
+
+    - Enter your app's package name in the Android package name field (_This field is the only mandatory one, if are not sure how to fill other fields - just don't_.)
     <img src="/docs/images/app_creation_menu.png" width=50%>
 
 > [!WARNING]
 > Make sure to enter the package name that your app is actually using. The package name value is case-sensitive, and it cannot be changed for this Firebase Android app after it's registered with your Firebase project.
-
-<img src="/docs/images/android_app_id.png" width=50%>
-
 > [!TIP]
 > Find your app's package name in your module (app-level) Gradle file, usually app/build.gradle (example package name: com.yourcompany.yourproject)
+
+<img src="/docs/images/android_app_id.png" width=50%>
 
 2. Click **Register app**.
 
