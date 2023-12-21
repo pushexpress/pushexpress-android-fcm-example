@@ -1,17 +1,15 @@
 > [!NOTE]
 > Everything in this readme has been done using Android Studio Hedgehog | 2023.1.1 Build #AI-231.9392.1.2311.11076708, built on November 9, 2023
 
-- [Set up a Firebase Cloud Messaging client app on Android](#Set up a Firebase Cloud Messaging client app on Android)
-{:toc}
+[Set up a Firebase Cloud Messaging client app on Android](#set-up-a-firebase-cloud-messaging-client-app-on-android) \
+    - [Option 1: Add Firebase using the Firebase console](#option-1-add-firebase-using-the-firebase-console-mostly-manual) \
+    - [Option 2: Add Firebase using the Firebase Assistant](#option-2-add-firebase-using-the-firebase-assistant-mostly-automated)
 
 ## Set up a Firebase Cloud Messaging client app on Android
 ### Option 1: Add Firebase using the Firebase console (mostly manual).
 
 > [!NOTE]
-> Assuming you already have a google account and firebase account.
-
-> [!NOTE]
-> The following covers official video instructions from Firebase youtube channel: [Getting started with Firebase on Android](https://youtu.be/jbHfJpoOzkI)
+> Assuming you already have a google account and firebase account. The following covers official video instructions from Firebase youtube channel: [Getting started with Firebase on Android](https://youtu.be/jbHfJpoOzkI)
 
 1. Go to the [Firebase console](https://console.firebase.google.com/).
 
@@ -88,4 +86,6 @@
     <img src="/docs/images/firebase_assistant_menu.png" width=50%>
 4. Follow the instructions up until second article.
 
+If everything went as it should've, you cann peek into logcat and confirm that Firebase has been initialized.
+    <img src="/docs/images/android_app_id.png">
     
