@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.rv4fcm"
+    namespace = "com.example.myapp"
     compileSdk = 34
 
     defaultConfig {
