@@ -16,7 +16,8 @@
     - Enter your app's package name in the Android package name field (_This field is the only mandatory one, if are not sure how to fill other fields - just don't_.)
 
     
-    <img src="/docs/images/get_started.png" width=50% margin=1rem>
+    <img src="/docs/images/get_started.png" width=50%>
+    <img src="/docs/images/app_creation_menu.png" width=50%>
 
 > [!WARNING]
 > Make sure to enter the package name that your app is actually using. The package name value is case-sensitive, and it cannot be changed for this Firebase Android app after it's registered with your Firebase project.
@@ -28,44 +29,42 @@
 
 2. Click **Register app**.
 
-3. Add a Firebase configuration file.
+3. Download nand add a Firebase configuration file.
     - Download and then add the Firebase Android configuration file `(google-services.json)` to your app
     - Move your config file into the **module (app-level)** root directory of your app
 
 > [!TIP]
 >  Your typical path should look like this `.../AndroidStudioProjects/your_app_name/app/google-services.json`
 
-
-
 4. Install dependencies
 
-Filename: `build.gradle.kts` (Module :app). This is your module (app-level).
-```kotlin
-plugins {
+    Filename: `build.gradle.kts` (Module :app). This is your module (app-level).
+    ```kotlin
+    plugins {
+        // ...
+        // Add the Google services Gradle plugin
+        id("com.google.gms.google-services")
+    }
+
+    dependencies {
     // ...
-    // Add the Google services Gradle plugin
-    id("com.google.gms.google-services")
-}
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
 
-dependencies {
-  // ...
-  // Import the Firebase BoM
-  implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    // If you want analytics enabled: Add the dependency for the Firebase SDK for Google Analytics
+    implementation("com.google.firebase:firebase-analytics")
+    }
+    ```
 
-  // When using the BoM, you don't specify versions in Firebase library dependencies
-  // If you want analytics enabled: Add the dependency for the Firebase SDK for Google Analytics
-  implementation("com.google.firebase:firebase-analytics")
-}
-```
-
-Filename: `build.gradle.kts` (Project \<your app name>\). This is your root-level (project-level).
-```kotlin
-plugins {
-    // ...
-    // Add the dependency for the Google services Gradle plugin
-    id("com.google.gms.google-services") version "4.4.0" apply false
-}
-```
+    Filename: `build.gradle.kts` (Project \<your app name>\). This is your root-level (project-level).
+    ```kotlin
+    plugins {
+        // ...
+        // Add the dependency for the Google services Gradle plugin
+        id("com.google.gms.google-services") version "4.4.0" apply false
+    }
+    ```
 
 ### Option 2: Add Firebase using the Firebase Assistant (mostly automated).
 
@@ -80,8 +79,12 @@ plugins {
     macOS: \
     **Android Studio** > **Check for updates**
 
-2. Open the Firebase Assistant: **Tools** > **Firebase**. \
+2. Open the Firebase Assistant: **Tools** > **Firebase**.
 
     <img src="/docs/images/firebase_assistant.png" width=50%>
 
-3. In docked menu, choose _Cloud Messaging_
+3. In docked menu, choose _Cloud Messaging_ -> _Set up Firebase Cloud Messaging_
+    <img src="/docs/images/firebase_assistant_menu.png" width=50%>
+4. Follow the instructions up until second article.
+
+    
