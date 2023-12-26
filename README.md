@@ -16,7 +16,7 @@
     - In the center of the project overview page, click the Android icon or Add app to launch the setup workflow
     <img src="/docs/images/get_started.png" width=50%>
 
-    - Enter your app's package name in the Android package name field (_This field is the only mandatory one, if are not sure how to fill other fields - just don't_.)
+    - Enter your app's package name in the Android package name field (_This field is the only mandatory one, if are not sure how to fill other fields - just don't_)
     <img src="/docs/images/app_creation_menu.png" width=50%>
 
 > [!WARNING]
@@ -28,7 +28,7 @@
 
 2. Click **Register app**.
 
-3. Download nand add a Firebase configuration file.
+3. Download and add a Firebase configuration file.
     - Download and then add the Firebase Android configuration file `(google-services.json)` to your app
     - Move your config file into the **module (app-level)** root directory of your app
 
@@ -82,10 +82,10 @@
 
     <img src="/docs/images/firebase_assistant.png" width=50%>
 
-3. In docked menu, choose _Cloud Messaging_ -> _Set up Firebase Cloud Messaging_
+3. In a docked menu, choose _Cloud Messaging_ -> _Set up Firebase Cloud Messaging_
     <img src="/docs/images/firebase_assistant_menu.png" width=50%>
 4. Follow the instructions up until second article.
 
-If everything went as it should've, you cann peek into logcat and confirm that Firebase has been initialized.
+If everything went as it should've, you can peek into logcat and confirm that Firebase has been initialized.
     <img src="/docs/images/firebase_init.jpg">
     

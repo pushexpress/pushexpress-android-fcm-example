@@ -51,11 +51,13 @@ android {
 }
 
 dependencies {
-    implementation("com.google.code.gson:gson:2.10")
+    implementation("com.squareup.moshi:moshi:1.12.0")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
-    implementation("androidx.core:core-ktx:1.10.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-    implementation("androidx.activity:activity-compose:1.7.0")
+    implementation("com.squareup.okio:okio:3.0.0")
+    implementation("com.google.code.gson:gson:2.10")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    implementation("androidx.activity:activity-compose:1.8.2")
     implementation(platform("androidx.compose:compose-bom:2023.08.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")

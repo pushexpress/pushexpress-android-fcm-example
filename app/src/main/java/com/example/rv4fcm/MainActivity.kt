@@ -1,5 +1,4 @@
 package com.example.rv4fcm
-
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -8,34 +7,34 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
-import okhttp3.Call
-import okhttp3.Callback
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
 import org.json.JSONObject
-import java.io.IOException
 import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 
-
 const val PUSHEXPRESS_APP_ID: String = "9999-999999"
-
-// App preference filename.
 const val PREFERENCE_FILENAME: String = "app_preference"
-
-// Local storage keys.
-const val FIREBASE_TOKEN: String = "fb_token"
-const val PUSHEXPRESS_ID: String = "pushex_id"
-const val IC_TOKEN: String = "icToken"
-
-// Log tag.
+const val LOCAL_STORAGE_FIREBASE_TOKEN: String = "fb_token"
+const val LOCAL_STORAGE_PUSHEXPRESS_ID: String = "pushex_id"
+const val LOCAL_STORAGE_IC_TOKEN: String = "icToken"
 const val LOG_APP_INFO: String = "APP INFO"
 
+val CAMPAIGN_TAGS: Map<String, String> = mapOf(
+    "offer" to "google_ads_12321",
+    "campaign" to "campaign1",
+    "ad_id" to "id1"
+)
+
 class MainActivity : ComponentActivity() {
+
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var icToken: String
     private val client = OkHttpClient()
@@ -43,65 +42,55 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
-        icToken = sharedPreferences.getString(IC_TOKEN, "").toString()
-
-        if (icToken.isEmpty()) {
-            icToken = UUID.randomUUID().toString()
-            with (sharedPreferences.edit()) {
-                putString(IC_TOKEN, icToken)
-                apply()
-            }
-        }
-
-        Firebase.messaging.token.addOnCompleteListener {
-            if (it.isSuccessful) {
-                with (sharedPreferences.edit()){
-                    putString(FIREBASE_TOKEN, it.result)
-                    apply()
-                }
-            }
-        }
-        getAppID()
-        updateAppInfo()
-        Log.d(LOG_APP_INFO, "firebase token ${sharedPreferences
-            .getString(FIREBASE_TOKEN, null)}")
-        Log.d(LOG_APP_INFO, "pushexpress id ${sharedPreferences
-            .getString(PUSHEXPRESS_ID, null)}")
-        Log.d(LOG_APP_INFO, "ic token ${sharedPreferences
-            .getString(IC_TOKEN, null)}")
+        icToken = sharedPreferences.getString(LOCAL_STORAGE_IC_TOKEN, "") ?: ""
+        initializePushExpressApi()
     }
 
-    private fun getAppID() {
-        val sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
-        val json = JSONObject()
-        json.put("ic_token", icToken)
+    private fun initializePushExpressApi() {
+        CoroutineScope(Dispatchers.IO).launch {
+            initializeIcToken()
+            initializeFirebase()
+            getPushExpressId()
+            updateAppInfo()
+        }
+        Log.d(LOG_APP_INFO, "firebase token ${sharedPreferences
+            .getString(LOCAL_STORAGE_FIREBASE_TOKEN, null)}")
+        Log.d(LOG_APP_INFO, "pushexpress id ${sharedPreferences
+            .getString(LOCAL_STORAGE_PUSHEXPRESS_ID, null)}")
+        Log.d(LOG_APP_INFO, "ic token ${sharedPreferences
+            .getString(LOCAL_STORAGE_IC_TOKEN, null)}")
+    }
 
-        val requestBody = json.toString()
-            .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+    private suspend fun initializeIcToken() {
+        withContext(Dispatchers.IO) {
+            if (icToken.isEmpty()) {
+                icToken = UUID.randomUUID().toString()
+                sharedPreferences.edit().putString(LOCAL_STORAGE_IC_TOKEN, icToken).apply()
+            }
+        }
+    }
 
+    private suspend fun initializeFirebase() {
+        Firebase.messaging.token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                sharedPreferences.edit().putString(LOCAL_STORAGE_FIREBASE_TOKEN, token).apply()
+            }
+        }
+    }
+
+    private suspend fun getPushExpressId() {
+        val json = JSONObject().apply { put("ic_token", icToken) }
+        val requestBody = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
         val request = Request.Builder()
             .url("https://core.push.express/api/r/v2/apps/$PUSHEXPRESS_APP_ID/instances")
             .post(requestBody)
             .build()
 
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e(LOG_APP_INFO, e.printStackTrace().toString())
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                val responseBody = response.body?.string()
-                if (response.isSuccessful){
-                    val id = responseBody?.let { JSONObject(it).getString("id") }
-                    with (sharedPreferences.edit()){
-                        putString(PUSHEXPRESS_ID, id)
-                        apply()
-                    }
-                } else {
-                    Log.e(LOG_APP_INFO, "failed to get response from ${request.url}")
-                }
-            }
-        })
+        val response = withContext(Dispatchers.IO) { client.newCall(request).execute() }
+        val responseBody = response.body?.string()
+        val id = responseBody?.let { JSONObject(it).getString("id") }
+        sharedPreferences.edit().putString(LOCAL_STORAGE_PUSHEXPRESS_ID, id).apply()
     }
 
     private fun getDeviceCountry(context: Context): String {
@@ -113,44 +102,32 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun updateAppInfo() {
-        val sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
-
-        val firebaseToken = sharedPreferences.getString(FIREBASE_TOKEN, null)
-        val icID = sharedPreferences.getString(PUSHEXPRESS_ID, null)
+    private suspend fun updateAppInfo() {
+        val firebaseToken = sharedPreferences.getString(LOCAL_STORAGE_FIREBASE_TOKEN, null) ?: ""
+        val icID = sharedPreferences.getString(LOCAL_STORAGE_PUSHEXPRESS_ID, null) ?: ""
         val deviceCountry = getDeviceCountry(this)
         val deviceLanguage = Locale.getDefault().language
         val deviceTimeZone = TimeZone.getDefault().rawOffset / 1000
 
-        val json = JSONObject()
-        json.put("transport_type", "fcm")
-        json.put("transport_token", firebaseToken)
-        json.put("platform_type", "android")
-        json.put("lang", deviceLanguage)
-        json.put("country", deviceCountry.uppercase())
-        json.put("tz_sec", deviceTimeZone)
+        val json = JSONObject().apply {
+            put("transport_type", "fcm")
+            put("transport_token", firebaseToken)
+            put("ext_id", icToken)
+            put("platform_type", "android")
+            put("lang", deviceLanguage)
+            put("country", deviceCountry.uppercase())
+            put("tz_sec", deviceTimeZone)
+            put("tags", JSONObject(CAMPAIGN_TAGS))
+        }
 
-        val requestBody = json.toString()
-            .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-
+        val requestBody = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
         val request = Request.Builder()
             .url("https://core.push.express/api/r/v2/apps/$PUSHEXPRESS_APP_ID/instances/$icID/info")
             .put(requestBody)
             .build()
 
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                val responseBody = response.body?.string()
-                if (response.isSuccessful){
-                    Log.d(LOG_APP_INFO, "update info response: $responseBody")
-                } else {
-                    Log.e(LOG_APP_INFO, "failed to get response from ${request.url}")
-                }
-            }
-        })
+        val response = withContext(Dispatchers.IO) { client.newCall(request).execute() }
+        val responseBody = response.body?.string()
+        Log.d(LOG_APP_INFO, "update info response: $responseBody")
     }
 }
