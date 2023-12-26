@@ -89,3 +89,4 @@
 If everything went as it should've, you can peek into logcat and confirm that Firebase has been initialized.
     <img src="/docs/images/firebase_init.jpg">
     
+## Handling an api requests inside the application itself.
