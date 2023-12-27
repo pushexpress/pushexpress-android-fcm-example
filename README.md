@@ -3,7 +3,14 @@
 
 [Set up a Firebase Cloud Messaging client app on Android](#set-up-a-firebase-cloud-messaging-client-app-on-android) \
     - [Option 1: Add Firebase using the Firebase console](#option-1-add-firebase-using-the-firebase-console-mostly-manual) \
-    - [Option 2: Add Firebase using the Firebase Assistant](#option-2-add-firebase-using-the-firebase-assistant-mostly-automated)
+    - [Option 2: Add Firebase using the Firebase Assistant](#option-2-add-firebase-using-the-firebase-assistant-mostly-automated) 
+
+[Handling an api requests inside the application itself](#handling-an-api-requests-inside-the-application-itself) \
+    - [Set up manifest configuration file](#set-up-manifest-configuration-file) \
+    - [Set up Main Activity class](#set-up-main-activity-class) \
+    - [Install OKHTTP library to manage http requests](#install-okhttp-library-to-manage-http-requests)
+
+[Some key notes about implementation](#some-key-notes-about-implementation)
 
 ## Set up a Firebase Cloud Messaging client app on Android
 ### Option 1: Add Firebase using the Firebase console (mostly manual).
@@ -116,7 +123,7 @@ If everything went as it should've, you can peek into logcat and confirm that Fi
 
 </manifest>
 ```
-### Set up FCM event-handling class.
+### Set up Main Activity class.
 `MainActivity.kt`
 ```kotlin
 // Insert your push express application id. Format it as follows.
@@ -149,4 +156,4 @@ implementation("com.squareup.okhttp3:okhttp:4.10.0")
 ## Some key notes about implementation.
 1. This script only handles notifications in a foreground, since you need to implement your own android background logic to register user's clicks, redirects etc.
 2. You might need to adjust some things on your own, depending on your application's version and build.
-3. If you want an easy-peasy solution - use our ready-to-go [SDK](https://github.com/pushexpress/pushexpress-android-sdk/blob/main/docs/UseSDKInYourProject.md)
+3. If you want an easy-peasy solution - use our ready-to-go [SDK](https://github.com/pushexpress/pushexpress-android-sdk/blob/main/docs/UseSDKInYourProject.md).
