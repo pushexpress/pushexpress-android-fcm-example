@@ -90,3 +90,59 @@ If everything went as it should've, you can peek into logcat and confirm that Fi
     <img src="/docs/images/firebase_init.jpg">
     
 ## Handling an api requests inside the application itself.
+### Set up manifest configuration file.
+`AndroidManifest.xml`
+```xml
+<manifest>
+    // Declaring the permission (for API level 33 and higher).
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <application>
+
+        <activity>
+            ...
+        </activity>
+
+        // Declaring a service for handling Firebase Cloud Messaging (FCM) events.
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+
+    </application>
+
+</manifest>
+```
+### Set up FCM event-handling class.
+`MainActivity.kt`
+```kotlin
+// Insert your push express application id. Format it as follows.
+const val PUSHEXPRESS_APP_ID: String = "1234-567890"
+
+// Rename a local storage file if needed.
+const val PREFERENCE_FILENAME: String = "app_preference"
+
+// Rename a local storage keys for important or persistent data.
+const val LOCAL_STORAGE_FIREBASE_TOKEN: String = "fb_token" // Key for your firebase token.
+const val LOCAL_STORAGE_PUSHEXPRESS_ID: String = "pushex_id" // Key for your pushexpress id in our database?
+const val LOCAL_STORAGE_IC_TOKEN: String = "icToken" // Key for specific application's UUID. Generated inside onCreate function.
+
+// Rename log tag for your application to easily navigate LogCat.
+const val LOG_APP_INFO: String = "APP INFO"
+
+// Rename ad campaign tags or add more if needed. As per api documentation, tag names are predefined, you can choose from "ad_id", "offer" and "webmaster".
+val CAMPAIGN_TAGS: Map<String, String> = mapOf(
+    "offer" to "google_ads_12321",
+    "campaign" to "campaign1",
+    "ad_id" to "id1"
+)
+```
+### Install [OKHTTP](https://square.github.io/okhttp/) library to manage http requests.
+`build.gradle.kts` (app-level) 
+
+```gradle
+implementation("com.squareup.okhttp3:okhttp:4.10.0")
+```

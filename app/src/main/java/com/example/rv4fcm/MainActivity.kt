@@ -1,4 +1,5 @@
 package com.example.rv4fcm
+
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -48,8 +49,8 @@ class MainActivity : ComponentActivity() {
 
     private fun initializePushExpressApi() {
         CoroutineScope(Dispatchers.IO).launch {
-            initializeIcToken()
             initializeFirebase()
+            initializeIcToken()
             getPushExpressId()
             updateAppInfo()
         }

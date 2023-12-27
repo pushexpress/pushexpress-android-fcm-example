@@ -33,7 +33,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             put("msg_id", messageId)
             put("event", "delivered")
         }
-        val requestBody = json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        val requestBody = json.toString()
+            .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
         val request = Request.Builder()
             .url(url)
             .post(requestBody)
