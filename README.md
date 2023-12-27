@@ -146,3 +146,7 @@ val CAMPAIGN_TAGS: Map<String, String> = mapOf(
 ```gradle
 implementation("com.squareup.okhttp3:okhttp:4.10.0")
 ```
+## Some key notes about implementation.
+1. This script only handles notifications in a foreground, since you need to implement your own android background logic to register user's clicks, redirects etc.
+2. You might need to adjust some things on your own, depending on your application's version and build.
+3. If you want an easy-peasy solution - use our ready-to-go [SDK](https://github.com/pushexpress/pushexpress-android-sdk/blob/main/docs/UseSDKInYourProject.md)
