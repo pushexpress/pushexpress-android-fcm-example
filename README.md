@@ -8,6 +8,7 @@
 [Handling an api requests inside the application itself](#handling-an-api-requests-inside-the-application-itself) \
     - [Set up manifest configuration file](#set-up-manifest-configuration-file) \
     - [Set up Main Activity class](#set-up-main-activity-class) \
+    - [Set up kotlin class to handle firebase messsaging](#set-up-kotlin-class-to-handle-firebase-messsaging) \
     - [Install OKHTTP library to manage http requests](#install-okhttp-library-to-manage-http-requests)
 
 [Some key notes about implementation](#some-key-notes-about-implementation)
