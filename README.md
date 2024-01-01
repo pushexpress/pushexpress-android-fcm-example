@@ -147,6 +147,52 @@ val CAMPAIGN_TAGS: Map<String, String> = mapOf(
     "ad_id" to "id1"
 )
 ```
+You will need to add a logic from `MainActivity.kt` to your `onCreate()` method from our [MainActivity.kt](https://github.com/pushexpress/pushexpress-android-fcm-example/blob/feat/app/src/main/java/com/example/rv4fcm/MainActivity.kt).
+
+### Set up kotlin class to handle firebase messsaging.
+`MyFirebaseMessagingService.kt`
+```kotlin
+class MyFirebaseMessagingService : FirebaseMessagingService() {
+
+    override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        super.onMessageReceived(remoteMessage)
+
+        val messageId = remoteMessage.messageId ?: ""
+        sendDeliveryStatusToAPI(messageId)
+    }
+
+    private fun sendDeliveryStatusToAPI(messageId: String) {
+        val client = OkHttpClient()
+        val sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
+        val icID = sharedPreferences.getString(LOCAL_STORAGE_PUSHEXPRESS_ID, null) ?: ""
+        val url = "https://core.push.express/api/r/v2/apps/$PUSHEXPRESS_APP_ID/instances/$icID/events/notification"
+
+        val json = JSONObject().apply {
+            put("msg_id", messageId)
+            put("event", "delivered")
+        }
+        val requestBody = json.toString()
+            .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                e.printStackTrace()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                Log.d(LOG_APP_INFO, "Delivery status sent to the API")
+            }
+        })
+    }
+}
+```
+> [!TIP]
+> Do not forget to add a package name at the top of your file.
+
 ### Install [OKHTTP](https://square.github.io/okhttp/) library to manage http requests.
 `build.gradle.kts` (app-level) 
 
