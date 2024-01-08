@@ -1,4 +1,4 @@
-package com.example.rv4fcm.ui.theme
+package com.example.pxfcmapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

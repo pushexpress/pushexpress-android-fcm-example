@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "rv4fcm"
+rootProject.name = "pxfcmapp"
 include(":app")
  

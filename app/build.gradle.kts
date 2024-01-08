@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.rv4fcm"
+    namespace = "com.example.pxfcmapp"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.rv4fcm"
+        applicationId = "com.example.pxfcmapp"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

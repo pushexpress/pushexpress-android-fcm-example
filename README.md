@@ -149,7 +149,7 @@ val CAMPAIGN_TAGS: Map<String, String> = mapOf(
     "ad_id" to "id1"
 )
 ```
-You will need to add a logic from `MainActivity.kt` to your `onCreate()` method from our [MainActivity.kt](https://github.com/pushexpress/pushexpress-android-fcm-example/blob/feat/app/src/main/java/com/example/rv4fcm/MainActivity.kt).
+You will need to add a logic from `MainActivity.kt` to your `onCreate()` method from our [MainActivity.kt](https://github.com/pushexpress/pushexpress-android-fcm-example/blob/feat/app/src/main/java/com/example/pxfcmapp/MainActivity.kt).
 
 ### Set up kotlin class to handle firebase messsaging.
 `MyFirebaseMessagingService.kt`

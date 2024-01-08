@@ -1,4 +1,4 @@
-package com.example.rv4fcm.ui.theme
+package com.example.pxfcmapp.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -38,7 +38,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun Rv4fcmTheme(
+fun PxFcmAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
