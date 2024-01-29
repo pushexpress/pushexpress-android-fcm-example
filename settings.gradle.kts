@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "pxfcmapp"
+rootProject.name = "PushExpressFCMExampleApp"
 include(":app")
  
