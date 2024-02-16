@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">PushExpressFCMExampleApp</string>
+    <string name="channel_name">channel</string>
+    <string name="channel_description">desc</string>
 </resources>

@@ -1,13 +1,51 @@
 package com.example.pxfcmapp
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.telephony.TelephonyManager
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.messaging.ktx.messaging
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import com.google.firebase.Firebase
+import com.google.firebase.messaging.messaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,16 +55,24 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 
-import android.content.pm.PackageManager
-import android.os.Build
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-
+// NOTIFICATION RELATED
+const val NOTIFICATION_CHANNEL_ID = "sdkpushexpress_notification_channel"
+const val NOTIFICATION_CHANNEL_NAME = "Default"
+const val INTENT_ACTION_CLICK = "com.pushexpress.sdk.ACTION_CLICK"
+const val PX_TITLE_KEY = "px.title"
+const val PX_BODY_KEY = "px.body"
+const val PX_MSG_ID_KEY = "px.msg_id"
+const val PX_IMAGE_KEY = "px.image"
+const val PX_ICON_KEY = "px.icon"
+const val PX_LINK_KEY = "px.link"
+const val EXTRA_PX_MSG_ID = "EXTRA_PX_MSG_ID"
+const val EXTRA_PX_LINK = "EXTRA_PX_LINK"
 
 // ***** BEGIN PX INTERNALS: DO NOT MODIFY! *****
 const val PX_PREFERENCES: String = "px_preferences"
@@ -39,7 +85,7 @@ const val PX_LOG_TAG: String = "px_api"
 // ***** END PX INTERNALS *****
 
 // Put your REAL px_app_id here
-const val PX_APP_ID: String = "xxxxx-yyy"
+const val PX_APP_ID: String = "16906-1147"
 // Predefined tags, you can fill it later in code
 var PX_TAGS: MutableMap<String, String> = mutableMapOf(
     "audiences" to "",
@@ -48,10 +94,10 @@ var PX_TAGS: MutableMap<String, String> = mutableMapOf(
 )
 
 class MainActivity : ComponentActivity() {
-    private lateinit var pxPreferences: SharedPreferences
-    private val pxOkHttp = OkHttpClient()
+    lateinit var pxPreferences: SharedPreferences
+    val pxOkHttp = OkHttpClient()
 
-    private val pxNotificationPermissionLauncher = registerForActivityResult(
+    val pxNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
@@ -66,7 +112,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun pxAskNotificationPermission() {
+    fun pxAskNotificationPermission() {
         // This is only necessary for API Level >= 33 (TIRAMISU)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
@@ -81,10 +127,15 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        createNotificationChannel()
+        pxPreferences = getSharedPreferences("${packageName}_${PX_PREFERENCES}",
+            Context.MODE_PRIVATE)
 
+        setContent {
+            MainScreen(extId = "", mainActivity = this@MainActivity)
+        }
         // ***** BEGIN PX INITIALIZATION *****
 
         // Set audiences, like 'gender:F,age:>=21' or 'offer1234'
@@ -100,11 +151,10 @@ class MainActivity : ComponentActivity() {
         // Set Webmaster tag (only if you use it!!!)
         // PX_TAGS["webmaster"] = ""
 
-        pxPreferences = getSharedPreferences("${packageName}_${PX_PREFERENCES}",
-            Context.MODE_PRIVATE)
+
 
         pxInitialize(PX_APP_ID)
-        pxActivate("")                   // make new install with empty extId
+        // pxActivate("")                      // make new install with empty extId
         // pxActivate("my_ext_id_user_12345")  // make new install with specified extId
         // pxActivate(pxGetInstanceToken())    // make new install with static PX Instance Token
 
@@ -125,7 +175,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // ***** BEGIN PX SDK INTERFACE: DO NOT MODIFY! *****
-    private fun pxInitialize(appId: String) {
+    fun pxInitialize(appId: String) {
         if (appId.isEmpty()) {
             throw IllegalArgumentException("Bad appId, get it from your px admin page'")
         }
@@ -134,7 +184,7 @@ class MainActivity : ComponentActivity() {
         CoroutineScope(Dispatchers.IO).launch { pxInitializeIcToken(appId) }
     }
 
-    private fun pxActivate(extId: String) {
+    fun pxActivate(extId: String) {
         Log.d(PX_LOG_TAG, "pxActivate: extId $extId")
         pxPreferences.edit().putString(PX_PREFERENCES_EXT_ID, extId).apply()
         CoroutineScope(Dispatchers.IO).launch {
@@ -143,7 +193,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun pxSetExternalId(extId: String) {
+    fun pxSetExternalId(extId: String) {
         Log.d(PX_LOG_TAG, "pxSetExternalId: extId $extId")
         pxPreferences.edit().putString(PX_PREFERENCES_EXT_ID, extId).apply()
         CoroutineScope(Dispatchers.IO).launch {
@@ -151,7 +201,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun pxDeactivate() {
+    fun pxDeactivate() {
         val icToken = pxPreferences.getString(PX_PREFERENCES_IC_TOKEN, "").orEmpty()
         val icId = pxPreferences.getString(PX_PREFERENCES_IC_ID, "").orEmpty()
         val extId = pxPreferences.getString(PX_PREFERENCES_EXT_ID, "").orEmpty()
@@ -176,7 +226,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun pxSendClick(msgId: String) {
+    fun pxSendClick(msgId: String) {
         if (msgId == "") { return }
 
         val icId = pxPreferences.getString(PX_PREFERENCES_IC_ID, "").orEmpty()
@@ -191,17 +241,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun pxGetInstanceToken(): String {
+    fun pxGetInstanceToken(): String {
         return pxPreferences.getString(PX_PREFERENCES_IC_TOKEN, "").orEmpty()
     }
 
-    private fun pxGetExternalId(): String {
+    fun pxGetExternalId(): String {
         return pxPreferences.getString(PX_PREFERENCES_EXT_ID, "").orEmpty()
     }
     // ***** END PX SDK INTERFACE *****
 
     // ***** BEGIN PX INTERNALS: DO NOT MODIFY! *****
-    private fun pxGetTransportToken() {
+    fun pxGetTransportToken() {
         Firebase.messaging.token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val token = task.result
@@ -212,7 +262,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun pxInitializeIcToken(appId: String) {
+    fun pxInitializeIcToken(appId: String) {
         val curAppId = pxPreferences.getString(PX_PREFERENCES_APP_ID, "").orEmpty()
         val newIcToken = UUID.randomUUID().toString()
 
@@ -236,7 +286,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun pxGetInstanceId(extId: String) {
+    suspend fun pxGetInstanceId(extId: String) {
         // create new or get existed instance by ic_token + ext_id
         val icToken = pxPreferences.getString(PX_PREFERENCES_IC_TOKEN, "").orEmpty()
         val json = JSONObject().apply {
@@ -253,7 +303,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun pxGetDeviceCountry(context: Context): String {
+    fun pxGetDeviceCountry(context: Context): String {
         return try {
             (context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager)
                 .simCountryIso.uppercase()
@@ -263,7 +313,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun pxUpdateAppInfo() {
+    suspend fun pxUpdateAppInfo() {
         val icId = pxPreferences.getString(PX_PREFERENCES_IC_ID, "").orEmpty()
         if (icId == "") {
             Log.d(PX_LOG_TAG, "pxUpdateAppInfo: no icId yet, skipping")
@@ -292,7 +342,7 @@ class MainActivity : ComponentActivity() {
         pxMakeRequest("PUT", "instances/$icId/info", data)
     }
 
-    private suspend fun pxMakeRequest(method: String, urlSuffix: String, data: JSONObject,
+    suspend fun pxMakeRequest(method: String, urlSuffix: String, data: JSONObject,
                                       raise: Boolean = false): String {
         val appId = pxPreferences.getString(PX_PREFERENCES_APP_ID, "").orEmpty()
         var responseBody = ""
@@ -318,4 +368,176 @@ class MainActivity : ComponentActivity() {
         return responseBody
     }
     // ***** END PX INTERNALS *****
+    fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, importance).apply {
+                description = "Notification channel"
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    fun buildAndPublish(
+        title: String,
+        body: String,
+        icon: Int,
+        context: Context
+    ) {
+        val intent = Intent(context, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        var builder =  NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setSmallIcon(icon)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(pendingIntent)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+
+        with(NotificationManagerCompat.from(this)) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+            // notificationId is a unique int for each notification that you must define.
+            notify(NOTIFICATION_ID, builder.build())
+        }
+    }
+}
+
+fun myBackendAutoLoginFlow(): String {
+    // get stored login credentials
+    // if no stored creds, show login flow
+    // if not signed up, show signup flow and login then
+    // return some external user id
+    return "uid_12345"
+}
+
+@Composable
+fun MainScreen(extId: String, mainActivity: MainActivity) {
+        // A surface container using the 'background' color from the theme
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column {
+                UserFlow(extId, mainActivity)
+                LogcatMemo(tag = "")
+            }
+        }
+
+}
+
+@Composable
+fun UserFlow(extId: String, mainActivity: MainActivity) {
+    var userId by remember { mutableStateOf(extId) }
+    var loginEnabled by remember { mutableStateOf(true) }
+    var eventStatus by remember { mutableStateOf("Initial state") }
+    var loginStatus by remember { mutableStateOf("Logged out") }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(bottom = 8.dp)) {
+            //Text("Your userId (login): ", modifier = Modifier.padding(end = 8.dp))
+            TextField(
+                value = userId,
+                onValueChange = { userId = it },
+                modifier = Modifier.weight(1f),
+                label = { Text("Your userId (login):") },
+                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+            )
+        }
+        Row(modifier = Modifier.padding(bottom = 8.dp)) {
+            Button(
+                onClick = { mainActivity.buildAndPublish(
+                    "Notification Title",
+                    mainActivity.pxPreferences.getString(PX_PREFERENCES_IC_TOKEN, "").toString(),
+                    R.drawable.ic_launcher_background,
+                    mainActivity.baseContext
+                ) },
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Text("Signup/reg")
+            }
+            Button(
+                onClick = { eventStatus = "Dep event sent" },
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Text("Buy/dep")
+            }
+        }
+        Row(modifier = Modifier.padding(bottom = 8.dp)) {
+            Button(
+                enabled = loginEnabled,
+                onClick =
+                {
+                    // pxActivate(userId)
+                    loginStatus = "Logged in extId '${userId}'"
+                    loginEnabled = false
+                },
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Text("Login")
+            }
+            Button(
+                enabled = !loginEnabled,
+                onClick =
+                {
+                    // pxDeactivate()
+                    loginStatus = "Deactivated extId '${userId}', you can login again"
+                    loginEnabled = true
+                },
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Text("Log out")
+            }
+        }
+        Text(eventStatus)
+        Text(loginStatus)
+    }
+}
+
+@Composable
+fun LogcatMemo(tag: String) {
+    val logMessages = remember { mutableStateListOf<String>() }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(tag) {
+        withContext(Dispatchers.IO) {
+            try {
+                val process = Runtime.getRuntime().exec("logcat -v time $tag:* *:S")
+                val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
+
+                bufferedReader.forEachLine {
+                    launch {
+                        withContext(Dispatchers.Main) {
+                            logMessages.add(it)
+                            listState.animateScrollToItem(logMessages.size - 1)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Handle exception
+            }
+        }
+    }
+
+    LazyColumn(state = listState) {
+        items(logMessages) { message ->
+            Text(text = message)
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    MainScreen("user_id_1234", mainActivity = MainActivity())
 }

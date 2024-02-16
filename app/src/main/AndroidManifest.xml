@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
@@ -14,6 +13,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PxFcmApp"
         tools:targetApi="34">
+
+        <service
+            android:name=".FirebaseService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT"/>
+            </intent-filter>
+        </service>
 
         <activity
             android:name=".MainActivity"

@@ -163,7 +163,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         sendDeliveryStatusToAPI(messageId)
     }
 
-    private fun sendDeliveryStatusToAPI(messageId: String) {
+    fun sendDeliveryStatusToAPI(messageId: String) {
         val client = OkHttpClient()
         val sharedPreferences = getSharedPreferences(PREFERENCE_FILENAME, Context.MODE_PRIVATE)
         val icID = sharedPreferences.getString(LOCAL_STORAGE_PUSHEXPRESS_ID, null) ?: ""
