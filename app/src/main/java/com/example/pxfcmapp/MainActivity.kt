@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
 import android.telephony.TelephonyManager
@@ -44,6 +45,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.example.pxfcmapp.fcm.NOTIFICATION_ID
 import com.google.firebase.Firebase
 import com.google.firebase.messaging.messaging
 import kotlinx.coroutines.CoroutineScope
@@ -132,7 +134,6 @@ class MainActivity : ComponentActivity() {
         createNotificationChannel()
         pxPreferences = getSharedPreferences("${packageName}_${PX_PREFERENCES}",
             Context.MODE_PRIVATE)
-
         setContent {
             MainScreen(extId = "", mainActivity = this@MainActivity)
         }
@@ -154,7 +155,9 @@ class MainActivity : ComponentActivity() {
 
 
         pxInitialize(PX_APP_ID)
-        // pxActivate("")                      // make new install with empty extId
+        pxGetTransportToken()
+        Log.d(PX_LOG_TAG, pxPreferences.getString(PX_PREFERENCES_TT_TOKEN, "no such token").toString())
+        // pxActivate("")                 // make new install with empty extId
         // pxActivate("my_ext_id_user_12345")  // make new install with specified extId
         // pxActivate(pxGetInstanceToken())    // make new install with static PX Instance Token
 
@@ -388,12 +391,14 @@ class MainActivity : ComponentActivity() {
     ) {
         val intent = Intent(context, MainActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE)
 
         var builder =  NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(icon)
             .setContentTitle(title)
             .setContentText(body)
+            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+            .setSmallIcon(icon)
+            .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
@@ -458,9 +463,9 @@ fun UserFlow(extId: String, mainActivity: MainActivity) {
             Button(
                 onClick = { mainActivity.buildAndPublish(
                     "Notification Title",
-                    mainActivity.pxPreferences.getString(PX_PREFERENCES_IC_TOKEN, "").toString(),
+                    mainActivity.pxPreferences.getString(PX_PREFERENCES_IC_ID, "").toString(),
                     R.drawable.ic_launcher_background,
-                    mainActivity.baseContext
+                    mainActivity.applicationContext
                 ) },
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
