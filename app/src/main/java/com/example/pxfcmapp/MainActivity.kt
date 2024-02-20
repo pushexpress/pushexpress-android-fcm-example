@@ -1,13 +1,8 @@
 package com.example.pxfcmapp
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
 import android.telephony.TelephonyManager
@@ -41,11 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.example.pxfcmapp.fcm.NOTIFICATION_ID
+import com.example.pxfcmapp.models.Postback
 import com.google.firebase.Firebase
 import com.google.firebase.messaging.messaging
 import kotlinx.coroutines.CoroutineScope
@@ -85,9 +77,10 @@ const val PX_PREFERENCES_IC_ID: String = "ic_id"
 const val PX_PREFERENCES_EXT_ID: String = "ext_id"
 const val PX_LOG_TAG: String = "px_api"
 // ***** END PX INTERNALS *****
+const val TEST_EXTERNAL_ID: String = "666"
 
 // Put your REAL px_app_id here
-const val PX_APP_ID: String = "16906-1147"
+const val PX_APP_ID: String = ""
 // Predefined tags, you can fill it later in code
 var PX_TAGS: MutableMap<String, String> = mutableMapOf(
     "audiences" to "",
@@ -96,10 +89,10 @@ var PX_TAGS: MutableMap<String, String> = mutableMapOf(
 )
 
 class MainActivity : ComponentActivity() {
-    lateinit var pxPreferences: SharedPreferences
-    val pxOkHttp = OkHttpClient()
+    private lateinit var pxPreferences: SharedPreferences
+    private val pxOkHttp = OkHttpClient()
 
-    val pxNotificationPermissionLauncher = registerForActivityResult(
+    private val pxNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
@@ -114,7 +107,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun pxAskNotificationPermission() {
+    private fun pxAskNotificationPermission() {
         // This is only necessary for API Level >= 33 (TIRAMISU)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
@@ -131,7 +124,6 @@ class MainActivity : ComponentActivity() {
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        createNotificationChannel()
         pxPreferences = getSharedPreferences("${packageName}_${PX_PREFERENCES}",
             Context.MODE_PRIVATE)
         setContent {
@@ -155,9 +147,8 @@ class MainActivity : ComponentActivity() {
 
 
         pxInitialize(PX_APP_ID)
-        pxGetTransportToken()
-        Log.d(PX_LOG_TAG, pxPreferences.getString(PX_PREFERENCES_TT_TOKEN, "no such token").toString())
-        // pxActivate("")                 // make new install with empty extId
+        pxActivate(TEST_EXTERNAL_ID)
+        // make new install with empty extId
         // pxActivate("my_ext_id_user_12345")  // make new install with specified extId
         // pxActivate(pxGetInstanceToken())    // make new install with static PX Instance Token
 
@@ -178,7 +169,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // ***** BEGIN PX SDK INTERFACE: DO NOT MODIFY! *****
-    fun pxInitialize(appId: String) {
+    private fun pxInitialize(appId: String) {
         if (appId.isEmpty()) {
             throw IllegalArgumentException("Bad appId, get it from your px admin page'")
         }
@@ -187,7 +178,7 @@ class MainActivity : ComponentActivity() {
         CoroutineScope(Dispatchers.IO).launch { pxInitializeIcToken(appId) }
     }
 
-    fun pxActivate(extId: String) {
+    private fun pxActivate(extId: String) {
         Log.d(PX_LOG_TAG, "pxActivate: extId $extId")
         pxPreferences.edit().putString(PX_PREFERENCES_EXT_ID, extId).apply()
         CoroutineScope(Dispatchers.IO).launch {
@@ -229,7 +220,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun pxSendClick(msgId: String) {
+    private fun pxSendClick(msgId: String) {
         if (msgId == "") { return }
 
         val icId = pxPreferences.getString(PX_PREFERENCES_IC_ID, "").orEmpty()
@@ -254,7 +245,7 @@ class MainActivity : ComponentActivity() {
     // ***** END PX SDK INTERFACE *****
 
     // ***** BEGIN PX INTERNALS: DO NOT MODIFY! *****
-    fun pxGetTransportToken() {
+    private fun pxGetTransportToken() {
         Firebase.messaging.token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val token = task.result
@@ -265,7 +256,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun pxInitializeIcToken(appId: String) {
+    private fun pxInitializeIcToken(appId: String) {
         val curAppId = pxPreferences.getString(PX_PREFERENCES_APP_ID, "").orEmpty()
         val newIcToken = UUID.randomUUID().toString()
 
@@ -289,7 +280,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    suspend fun pxGetInstanceId(extId: String) {
+    private suspend fun pxGetInstanceId(extId: String) {
         // create new or get existed instance by ic_token + ext_id
         val icToken = pxPreferences.getString(PX_PREFERENCES_IC_TOKEN, "").orEmpty()
         val json = JSONObject().apply {
@@ -306,7 +297,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun pxGetDeviceCountry(context: Context): String {
+    private fun pxGetDeviceCountry(context: Context): String {
         return try {
             (context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager)
                 .simCountryIso.uppercase()
@@ -316,7 +307,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    suspend fun pxUpdateAppInfo() {
+    private suspend fun pxUpdateAppInfo() {
         val icId = pxPreferences.getString(PX_PREFERENCES_IC_ID, "").orEmpty()
         if (icId == "") {
             Log.d(PX_LOG_TAG, "pxUpdateAppInfo: no icId yet, skipping")
@@ -371,51 +362,26 @@ class MainActivity : ComponentActivity() {
         return responseBody
     }
     // ***** END PX INTERNALS *****
-    fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, importance).apply {
-                description = "Notification channel"
-            }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+
+    suspend fun sendPostback(postback: Postback, extId: String): String {
+        val userId = PX_APP_ID.split("-").last()
+        var responseBody = ""
+        try {
+            val request = Request.Builder()
+                .url("https://app.push.express/api/postback/?id=$extId&status=${postback.event}_$userId")
+                .method("POST", "".toRequestBody())
+                .build()
+            Log.d(PX_LOG_TAG, "Sending postback at ${request.url}")
+
+            val response = withContext(Dispatchers.IO) { pxOkHttp.newCall(request).execute() }
+            responseBody = response.body?.string().orEmpty()
+            Log.d(PX_LOG_TAG, "sendPostback response: $responseBody")
+        } catch (e: Exception) {
+            Log.d(PX_LOG_TAG, e.toString())
         }
+        return responseBody
     }
 
-    fun buildAndPublish(
-        title: String,
-        body: String,
-        icon: Int,
-        context: Context
-    ) {
-        val intent = Intent(context, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE)
-
-        var builder =  NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
-            .setSmallIcon(icon)
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentIntent(pendingIntent)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
-
-        with(NotificationManagerCompat.from(this)) {
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                return
-            }
-            // notificationId is a unique int for each notification that you must define.
-            notify(NOTIFICATION_ID, builder.build())
-        }
-    }
 }
 
 fun myBackendAutoLoginFlow(): String {
@@ -461,49 +427,48 @@ fun UserFlow(extId: String, mainActivity: MainActivity) {
         }
         Row(modifier = Modifier.padding(bottom = 8.dp)) {
             Button(
-                onClick = { mainActivity.buildAndPublish(
-                    "Notification Title",
-                    mainActivity.pxPreferences.getString(PX_PREFERENCES_IC_ID, "").toString(),
-                    R.drawable.ic_launcher_background,
-                    mainActivity.applicationContext
-                ) },
+                onClick = { CoroutineScope(Dispatchers.Main).launch {
+                    mainActivity.sendPostback(Postback.REGISTER, TEST_EXTERNAL_ID)
+                } },
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
                 Text("Signup/reg")
             }
             Button(
-                onClick = { eventStatus = "Dep event sent" },
+                onClick = { CoroutineScope(Dispatchers.Main).launch {
+                    mainActivity.sendPostback(Postback.DEPOSIT, TEST_EXTERNAL_ID)
+                } },
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
                 Text("Buy/dep")
             }
         }
-        Row(modifier = Modifier.padding(bottom = 8.dp)) {
-            Button(
-                enabled = loginEnabled,
-                onClick =
-                {
-                    // pxActivate(userId)
-                    loginStatus = "Logged in extId '${userId}'"
-                    loginEnabled = false
-                },
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Text("Login")
-            }
-            Button(
-                enabled = !loginEnabled,
-                onClick =
-                {
-                    // pxDeactivate()
-                    loginStatus = "Deactivated extId '${userId}', you can login again"
-                    loginEnabled = true
-                },
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Text("Log out")
-            }
-        }
+//        Row(modifier = Modifier.padding(bottom = 8.dp)) {
+//            Button(
+//                enabled = loginEnabled,
+//                onClick =
+//                {
+//                    // pxActivate(userId)
+//                    loginStatus = "Logged in extId '${userId}'"
+//                    loginEnabled = false
+//                },
+//                modifier = Modifier.padding(bottom = 8.dp)
+//            ) {
+//                Text("Login")
+//            }
+//            Button(
+//                enabled = !loginEnabled,
+//                onClick =
+//                {
+//                    // pxDeactivate()
+//                    loginStatus = "Deactivated extId '${userId}', you can login again"
+//                    loginEnabled = true
+//                },
+//                modifier = Modifier.padding(bottom = 8.dp)
+//            ) {
+//                Text("Log out")
+//            }
+//        }
         Text(eventStatus)
         Text(loginStatus)
     }
