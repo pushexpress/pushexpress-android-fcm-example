@@ -77,10 +77,9 @@ const val PX_PREFERENCES_IC_ID: String = "ic_id"
 const val PX_PREFERENCES_EXT_ID: String = "ext_id"
 const val PX_LOG_TAG: String = "px_api"
 // ***** END PX INTERNALS *****
-const val TEST_EXTERNAL_ID: String = "666"
 
 // Put your REAL px_app_id here
-const val PX_APP_ID: String = ""
+const val PX_APP_ID: String = "16964-1157"
 // Predefined tags, you can fill it later in code
 var PX_TAGS: MutableMap<String, String> = mutableMapOf(
     "audiences" to "",
@@ -124,12 +123,10 @@ class MainActivity : ComponentActivity() {
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // ***** BEGIN PX INITIALIZATION *****
         pxPreferences = getSharedPreferences("${packageName}_${PX_PREFERENCES}",
             Context.MODE_PRIVATE)
-        setContent {
-            MainScreen(extId = "", mainActivity = this@MainActivity)
-        }
-        // ***** BEGIN PX INITIALIZATION *****
 
         // Set audiences, like 'gender:F,age:>=21' or 'offer1234'
         PX_TAGS["audiences"] = "google_ads_offer555"
@@ -144,10 +141,10 @@ class MainActivity : ComponentActivity() {
         // Set Webmaster tag (only if you use it!!!)
         // PX_TAGS["webmaster"] = ""
 
-
+        pxAskNotificationPermission()
 
         pxInitialize(PX_APP_ID)
-        pxActivate(TEST_EXTERNAL_ID)
+        pxActivate(pxGetInstanceToken())
         // make new install with empty extId
         // pxActivate("my_ext_id_user_12345")  // make new install with specified extId
         // pxActivate(pxGetInstanceToken())    // make new install with static PX Instance Token
@@ -164,8 +161,11 @@ class MainActivity : ComponentActivity() {
             pxSendClick(intent.getStringExtra("px.msg_id").orEmpty())
         }
 
-        pxAskNotificationPermission()
         // ***** END PX INITIALIZATION *****
+
+        setContent {
+            MainScreen(extId = pxGetExternalId(), mainActivity = this@MainActivity)
+        }
     }
 
     // ***** BEGIN PX SDK INTERFACE: DO NOT MODIFY! *****
@@ -175,7 +175,7 @@ class MainActivity : ComponentActivity() {
         }
 
         Log.d(PX_LOG_TAG, "pxInitialize: appId $appId")
-        CoroutineScope(Dispatchers.IO).launch { pxInitializeIcToken(appId) }
+        pxInitializeIcToken(appId)
     }
 
     private fun pxActivate(extId: String) {
@@ -321,7 +321,7 @@ class MainActivity : ComponentActivity() {
         val deviceTimeZone = TimeZone.getDefault().rawOffset / 1000
 
         val data = JSONObject().apply {
-            put("transport_type", "fcm")
+            put("transport_type", "fcm.data")
             put("transport_token", ttToken)
             put("platform_type", "android")
             put("platform_name", "android_api_${Build.VERSION.SDK_INT}")
@@ -401,7 +401,7 @@ fun MainScreen(extId: String, mainActivity: MainActivity) {
         ) {
             Column {
                 UserFlow(extId, mainActivity)
-                LogcatMemo(tag = "")
+                LogcatMemo(tag = PX_LOG_TAG)
             }
         }
 
@@ -428,7 +428,7 @@ fun UserFlow(extId: String, mainActivity: MainActivity) {
         Row(modifier = Modifier.padding(bottom = 8.dp)) {
             Button(
                 onClick = { CoroutineScope(Dispatchers.Main).launch {
-                    mainActivity.sendPostback(Postback.REGISTER, TEST_EXTERNAL_ID)
+                    mainActivity.sendPostback(Postback.REGISTER, mainActivity.pxGetExternalId())
                 } },
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
@@ -436,7 +436,7 @@ fun UserFlow(extId: String, mainActivity: MainActivity) {
             }
             Button(
                 onClick = { CoroutineScope(Dispatchers.Main).launch {
-                    mainActivity.sendPostback(Postback.DEPOSIT, TEST_EXTERNAL_ID)
+                    mainActivity.sendPostback(Postback.DEPOSIT, mainActivity.pxGetExternalId())
                 } },
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
